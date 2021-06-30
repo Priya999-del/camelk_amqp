@@ -1,22 +1,24 @@
 // camel-k: language=java configmap=amqptest
-
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 
 public class ReadWriteAMQP extends RouteBuilder {
   @Override
   public void configure() throws Exception {
 
-      // Send message to AMQ Broker every one second
-      from("timer:java?period=1000")
-        .routeId("send")
-        .setBody()
-          .simple("Hello Camel K from ${routeId} at at ${date:now:dd-MM-yyyy HH:mm:ss}")
-        .to("amqp:queue:phil-test");
+
+      
 
       // Receive messages from AMQ Broker
-      from("amqp:queue:phil-test")
+      from("amqp:queue:shelveRestockThresholdReachedAddress")
         .routeId("Receive")
-        .log("Receieve Message: ${body}");
+        .log("Receieve Message: ${body}")
+        .setHeader(Exchange.HTTP_METHOD, constant("POST"))
+        .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+        .setHeader("ACCEPT", constant("application/json"))
+        .setHeader("Authorization", constant("Basic YWRtaW46cGFzc3dvcmQ="))
+        .to("http://rhpam-kieserver.rhpam.svc.cluster.local:8080/services/rest/server/containers/Retail_Demo_1.0.2-SNAPSHOT/processes/Retail_Demo.shelve-restock/instances");
+            
       }
 
 }
